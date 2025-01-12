@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
   try {
     switch (method) {
-      // READ: Get all slots or slots for a specific date
+      // get all slots or slots for a specific date
       case "GET": {
         const { date } = req.query;
 
@@ -28,17 +28,16 @@ export default async function handler(req, res) {
           });
           res.status(200).json(slots);
         } else {
-          const slots = await Slot.find(); // Fetch all slots
+          const slots = await Slot.find();
           res.status(200).json(slots);
         }
         break;
       }
 
-      // CREATE: Add a new time slot
+      // adding a new time slot
       case "POST": {
         const { startTime, endTime, createdBy } = req.body;
 
-        // Check if the slot is already booked
         const existingSlot = await Slot.findOne({
           startTime: { $lt: endTime, $gte: startTime },
         });
@@ -52,15 +51,15 @@ export default async function handler(req, res) {
         break;
       }
 
-      // UPDATE: Modify an existing slot
+      // updating existing slot by id
       case "PUT": {
-        const { id } = req.query; // Slot ID to update
+        const { id } = req.query;
         const { startTime, endTime } = req.body;
 
         const updatedSlot = await Slot.findByIdAndUpdate(
           id,
           { startTime, endTime },
-          { new: true } // Return the updated document
+          { new: true }
         );
 
         if (!updatedSlot) {
@@ -71,9 +70,9 @@ export default async function handler(req, res) {
         break;
       }
 
-      // DELETE: Remove a slot
+      // emoving slot by id
       case "DELETE": {
-        const { id } = req.query; // Slot ID to delete
+        const { id } = req.query;
 
         const deletedSlot = await Slot.findByIdAndDelete(id);
 

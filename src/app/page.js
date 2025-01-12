@@ -3,8 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import axios from "axios";
-import "react-calendar/dist/Calendar.css";
-import "./globals.css";
 
 const startOfDay = (date) => {
   const newDate = new Date(date);
@@ -12,7 +10,7 @@ const startOfDay = (date) => {
   return newDate;
 };
 
-// Snackbar Component
+// snacker bar
 const Snackbar = ({ message, type, onClose }) => {
   return (
     <div
@@ -22,10 +20,7 @@ const Snackbar = ({ message, type, onClose }) => {
       role="alert"
     >
       {message}
-      <button
-        className="ml-4 text-white font-bold underline"
-        onClick={onClose}
-      >
+      <button className="ml-4 text-white font-bold underline" onClick={onClose}>
         Close
       </button>
     </div>
@@ -39,7 +34,11 @@ const Dashboard = () => {
   const [calendarData, setCalendarData] = useState({});
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [snackbar, setSnackbar] = useState({ isVisible: false, message: "", type: "" });
+  const [snackbar, setSnackbar] = useState({
+    isVisible: false,
+    message: "",
+    type: "",
+  });
 
   useEffect(() => {
     setIsLoading(true);
@@ -49,6 +48,7 @@ const Dashboard = () => {
     setIsLoading(false);
   }, [selectedDate]);
 
+  // fetching bookedslots
   const fetchBookedSlots = async (date) => {
     try {
       const { data } = await axios.get(`/api/slots?date=${date}`);
@@ -81,9 +81,10 @@ const Dashboard = () => {
     }
   };
 
+  // generating time slots of the particular date
   const generateTimeSlots = () => {
-    const startHour = 12; // 12 PM
-    const endHour = 17; // 5 PM
+    const startHour = 12;
+    const endHour = 17;
     const slots = [];
 
     const baseDate = startOfDay(selectedDate);
@@ -101,9 +102,13 @@ const Dashboard = () => {
     setTimeSlots(slots);
   };
 
+  // showing snackbar dynamically
   const showSnackbar = (message, type) => {
     setSnackbar({ isVisible: true, message, type });
-    setTimeout(() => setSnackbar({ isVisible: false, message: "", type: "" }), 3000);
+    setTimeout(
+      () => setSnackbar({ isVisible: false, message: "", type: "" }),
+      3000
+    );
   };
 
   const bookSlot = async (slot) => {
@@ -111,7 +116,7 @@ const Dashboard = () => {
       await axios.post("/api/slots", {
         startTime: slot.startTime.toISOString(),
         endTime: slot.endTime.toISOString(),
-        createdBy: "User", // Replace with authenticated user
+        createdBy: "User",
       });
 
       showSnackbar("Slot booked successfully!", "success");
@@ -122,6 +127,7 @@ const Dashboard = () => {
     }
   };
 
+  // functionality to delete specific selected slot
   const deleteSlot = async (slotId) => {
     try {
       await axios.delete(`/api/slots?id=${slotId}`);
@@ -133,6 +139,7 @@ const Dashboard = () => {
     }
   };
 
+  // functionality to specifically update slot
   const updateSlot = async (slotId, newSlot) => {
     try {
       await axios.put(`/api/slots?id=${slotId}`, {
@@ -155,7 +162,6 @@ const Dashboard = () => {
       return;
     }
 
-    // Ensure the new slot is not already booked
     const isBooked = bookedSlots.some(
       (bookedSlot) =>
         bookedSlot.startTime.getTime() === newSlot.startTime.getTime()
@@ -180,21 +186,16 @@ const Dashboard = () => {
       const dateKey = startOfDay(date).toISOString().split("T")[0];
       const slotCount = calendarData[dateKey] || 0;
 
-      if (slotCount === 0) return "bg-red-600 text-white";
-      if (slotCount === 1) return "bg-orange-500 text-white";
-      if (slotCount >= 2 && slotCount <= 4) return "bg-yellow-400 text-black";
-      if (slotCount === 5) return "bg-green-500 text-white";
+      if (slotCount === 0) return "react-calendar__tile--empty";
+
+      if (slotCount === 1) return "react-calendar__tile--few-slots";
+
+      if (slotCount >= 2 && slotCount <= 4)
+        return "react-calendar__tile--some-slots";
+
+      if (slotCount >= 5) return "react-calendar__tile--fully-booked";
     }
     return "";
-  };
-
-  const handleSlotSelect = (slot) => {
-    const updatedSlot = {
-      ...slot,
-      startTime: new Date(slot.startTime),
-      endTime: new Date(slot.endTime),
-    };
-    setSelectedSlot(updatedSlot);
   };
 
   if (isLoading) {
@@ -202,27 +203,51 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 bg-gray-50 rounded-xl shadow-lg">
-      <h1 className="text-4xl font-bold text-center text-indigo-700 mb-8">
+    <div className="flex flex-col items-center bg-gradient-to-r from-blue-50 to-indigo-100 p-6 min-h-screen">
+      <h1 className="text-4xl font-bold text-blue-800 mb-6">
         Time Slot Scheduler
       </h1>
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Calendar Section */}
-        <div className="w-full md:w-2/3 bg-white p-4 rounded-lg shadow-lg">
+      <div className="flex flex-wrap justify-center gap-10 w-full">
+        {/* calender implemented */}
+        <div className="bg-white p-6 shadow-lg rounded-lg w-full md:w-1/3 flex flex-col items-center">
+          <h2 className="text-2xl font-semibold text-blue-800 mb-4">
+            Select a Date
+          </h2>
           <Calendar
             onChange={setSelectedDate}
             value={selectedDate}
             tileClassName={getTileClassName}
             minDate={new Date()}
+            className="react-calendar"
           />
+          <div className="mt-6 w-full">
+            <h3 className="text-lg font-medium mb-2">Legend:</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-gray-300 rounded-full mr-2"></div>
+                No Slots
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-green-300 rounded-full mr-2"></div>
+                Few Slots
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-yellow-300 rounded-full mr-2"></div>
+                Some Slots
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-red-400 rounded-full mr-2"></div>
+                Fully Booked
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Time Slots Section */}
-        <div className="w-full md:w-1/3 bg-white p-6 rounded-lg shadow-lg">
-          <h2 className="text-xl font-bold text-indigo-600 mb-4">
+        <div className="flex flex-col items-center bg-white p-6 shadow-lg rounded-lg w-full md:w-1/2">
+          <h2 className="text-2xl font-semibold text-blue-800 mb-4">
             {selectedDate.toDateString()} - Time Slots
           </h2>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="flex flex-wrap gap-4 justify-center">
             {timeSlots.map((slot, index) => {
               const isBooked = bookedSlots.some(
                 (bookedSlot) =>
@@ -230,18 +255,17 @@ const Dashboard = () => {
               );
 
               const isSelected =
-                selectedSlot?.startTime?.getTime() ===
-                slot.startTime.getTime();
+                selectedSlot?.startTime?.getTime() === slot.startTime.getTime();
 
               return (
                 <button
                   key={index}
                   disabled={isBooked}
-                  className={`p-4 border rounded-lg text-lg font-medium transition duration-300 ease-in-out ${
+                  className={`p-2 border rounded-lg text-base transition duration-300 ease-in-out ${
                     isBooked
                       ? "bg-gray-300 cursor-not-allowed"
                       : "bg-indigo-500 text-white hover:bg-indigo-700"
-                  } ${isSelected ? "bg-green-600" : ""}`}
+                  } ${isSelected ? "bg-green-500 text-white" : ""}`}
                   onClick={() => {
                     if (selectedSlot) {
                       handleUpdateSlot(slot);
@@ -261,23 +285,21 @@ const Dashboard = () => {
                     minute: "2-digit",
                   })}
                   {isBooked && (
-                    <span className="ml-2 text-sm text-red-500">
-                      (Booked)
-                    </span>
+                    <span className="ml-2 text-sm text-red-500">(Booked)</span>
                   )}
                 </button>
               );
             })}
           </div>
 
-          <h2 className="text-xl font-bold text-indigo-600 mt-6">
+          <h2 className="mt-6 text-xl font-semibold text-blue-800">
             Booked Slots
           </h2>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-4 p-1">
             {bookedSlots.map((slot) => (
               <div
                 key={slot._id}
-                className="flex justify-between items-center p-4 border rounded-lg bg-gray-200"
+                className="flex justify-between items-center gap-4 py-2 px-6 border rounded-lg bg-gray-200"
               >
                 <span>
                   {slot.startTime.toLocaleTimeString([], {
@@ -292,17 +314,23 @@ const Dashboard = () => {
                 </span>
                 <div className="flex gap-2">
                   <button
-                    className={`p-2 text-white rounded-lg ${
+                    className={`p-1 text-white text-sm rounded-lg ${
                       selectedSlot?._id === slot._id
                         ? "bg-yellow-500"
                         : "bg-blue-500"
                     }`}
-                    onClick={() => setSelectedSlot(slot)}
+                    onClick={() => {
+                      if (selectedSlot?._id === slot._id) {
+                        setSelectedSlot(null);
+                      } else {
+                        setSelectedSlot(slot);
+                      }
+                    }}
                   >
                     {selectedSlot?._id === slot._id ? "Cancel" : "Update"}
                   </button>
                   <button
-                    className="p-2 bg-red-600 text-white rounded-lg"
+                    className="p-1 bg-red-600 text-white text-sm rounded-lg"
                     onClick={() => deleteSlot(slot._id)}
                   >
                     Delete
@@ -314,12 +342,14 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Snackbar */}
+      {/* snackbar for to delete update and booked */}
       {snackbar.isVisible && (
         <Snackbar
           message={snackbar.message}
           type={snackbar.type}
-          onClose={() => setSnackbar({ isVisible: false, message: "", type: "" })}
+          onClose={() =>
+            setSnackbar({ isVisible: false, message: "", type: "" })
+          }
         />
       )}
     </div>
