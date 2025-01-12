@@ -6,26 +6,24 @@ import axios from "axios";
 
 const startOfDay = (date) => {
   const newDate = new Date(date);
-  newDate.setHours(0, 0, 0, 0);
+  newDate.setUTCHours(0, 0, 0, 0);
   return newDate;
 };
 
-// snacker bar
-const Snackbar = ({ message, type, onClose }) => {
-  return (
-    <div
-      className={`fixed bottom-4 left-4 px-6 py-3 rounded-md shadow-lg text-white text-sm transition duration-300 ease-in-out ${
-        type === "success" ? "bg-green-600" : "bg-red-600"
-      }`}
-      role="alert"
-    >
-      {message}
-      <button className="ml-4 text-white font-bold underline" onClick={onClose}>
-        Close
-      </button>
-    </div>
-  );
-};
+// Snackbar component
+const Snackbar = ({ message, type, onClose }) => (
+  <div
+    className={`fixed bottom-4 left-4 px-6 py-3 rounded-md shadow-lg text-white text-sm transition duration-300 ease-in-out ${
+      type === "success" ? "bg-green-600" : "bg-red-600"
+    }`}
+    role="alert"
+  >
+    {message}
+    <button className="ml-4 text-white font-bold underline" onClick={onClose}>
+      Close
+    </button>
+  </div>
+);
 
 const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -48,7 +46,6 @@ const Dashboard = () => {
     setIsLoading(false);
   }, [selectedDate]);
 
-  // fetching bookedslots
   const fetchBookedSlots = async (date) => {
     try {
       const { data } = await axios.get(`/api/slots?date=${date}`);
@@ -81,20 +78,18 @@ const Dashboard = () => {
     }
   };
 
-  // generating time slots of the particular date
   const generateTimeSlots = () => {
     const startHour = 12;
     const endHour = 17;
     const slots = [];
-
     const baseDate = startOfDay(selectedDate);
 
     for (let hour = startHour; hour < endHour; hour++) {
       const start = new Date(baseDate);
-      start.setHours(hour, 0, 0, 0);
+      start.setUTCHours(hour, 0, 0, 0);
 
       const end = new Date(baseDate);
-      end.setHours(hour + 1, 0, 0, 0);
+      end.setUTCHours(hour + 1, 0, 0, 0);
 
       slots.push({ startTime: start, endTime: end });
     }
@@ -102,13 +97,9 @@ const Dashboard = () => {
     setTimeSlots(slots);
   };
 
-  // showing snackbar dynamically
   const showSnackbar = (message, type) => {
     setSnackbar({ isVisible: true, message, type });
-    setTimeout(
-      () => setSnackbar({ isVisible: false, message: "", type: "" }),
-      3000
-    );
+    setTimeout(() => setSnackbar({ isVisible: false, message: "", type: "" }), 3000);
   };
 
   const bookSlot = async (slot) => {
@@ -118,7 +109,6 @@ const Dashboard = () => {
         endTime: slot.endTime.toISOString(),
         createdBy: "User",
       });
-
       showSnackbar("Slot booked successfully!", "success");
       fetchBookedSlots(selectedDate.toISOString());
       fetchCalendarData();
@@ -127,7 +117,6 @@ const Dashboard = () => {
     }
   };
 
-  // functionality to delete specific selected slot
   const deleteSlot = async (slotId) => {
     try {
       await axios.delete(`/api/slots?id=${slotId}`);
@@ -139,14 +128,12 @@ const Dashboard = () => {
     }
   };
 
-  // functionality to specifically update slot
   const updateSlot = async (slotId, newSlot) => {
     try {
       await axios.put(`/api/slots?id=${slotId}`, {
         startTime: newSlot.startTime.toISOString(),
         endTime: newSlot.endTime.toISOString(),
       });
-
       showSnackbar("Slot updated successfully!", "success");
       fetchBookedSlots(selectedDate.toISOString());
       fetchCalendarData();
@@ -163,8 +150,7 @@ const Dashboard = () => {
     }
 
     const isBooked = bookedSlots.some(
-      (bookedSlot) =>
-        bookedSlot.startTime.getTime() === newSlot.startTime.getTime()
+      (bookedSlot) => bookedSlot.startTime.getTime() === newSlot.startTime.getTime()
     );
 
     if (isBooked) {
@@ -187,12 +173,8 @@ const Dashboard = () => {
       const slotCount = calendarData[dateKey] || 0;
 
       if (slotCount === 0) return "react-calendar__tile--empty";
-
       if (slotCount === 1) return "react-calendar__tile--few-slots";
-
-      if (slotCount >= 2 && slotCount <= 4)
-        return "react-calendar__tile--some-slots";
-
+      if (slotCount >= 2 && slotCount <= 4) return "react-calendar__tile--some-slots";
       if (slotCount >= 5) return "react-calendar__tile--fully-booked";
     }
     return "";
@@ -204,15 +186,11 @@ const Dashboard = () => {
 
   return (
     <div className="flex flex-col items-center bg-gradient-to-r from-blue-50 to-indigo-100 p-6 min-h-screen">
-      <h1 className="text-4xl font-bold text-blue-800 mb-6">
-        Time Slot Scheduler
-      </h1>
+      <h1 className="text-4xl font-bold text-blue-800 mb-6">Time Slot Scheduler</h1>
       <div className="flex flex-wrap justify-center gap-10 w-full">
-        {/* calender implemented */}
+        {/* Calendar Component */}
         <div className="bg-white p-6 shadow-lg rounded-lg w-full md:w-1/3 flex flex-col items-center">
-          <h2 className="text-2xl font-semibold text-blue-800 mb-4">
-            Select a Date
-          </h2>
+          <h2 className="text-2xl font-semibold text-blue-800 mb-4">Select a Date</h2>
           <Calendar
             onChange={setSelectedDate}
             value={selectedDate}
@@ -243,15 +221,13 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Time Slots Section */}
         <div className="flex flex-col items-center bg-white p-6 shadow-lg rounded-lg w-full md:w-1/2">
-          <h2 className="text-2xl font-semibold text-blue-800 mb-4">
-            {selectedDate.toDateString()} - Time Slots
-          </h2>
+          <h2 className="text-2xl font-semibold text-blue-800 mb-4">{selectedDate.toDateString()} - Time Slots</h2>
           <div className="flex flex-wrap gap-4 justify-center">
             {timeSlots.map((slot, index) => {
               const isBooked = bookedSlots.some(
-                (bookedSlot) =>
-                  bookedSlot.startTime.getTime() === slot.startTime.getTime()
+                (bookedSlot) => bookedSlot.startTime.getTime() === slot.startTime.getTime()
               );
 
               const isSelected =
@@ -292,9 +268,8 @@ const Dashboard = () => {
             })}
           </div>
 
-          <h2 className="mt-6 text-xl font-semibold text-blue-800">
-            Booked Slots
-          </h2>
+          {/* Booked Slots Section */}
+          <h2 className="mt-6 text-xl font-semibold text-blue-800">Booked Slots</h2>
           <div className="grid grid-cols-1 gap-4 p-1">
             {bookedSlots.map((slot) => (
               <div
@@ -342,14 +317,12 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* snackbar for to delete update and booked */}
+      {/* Snackbar for delete, update, and booking */}
       {snackbar.isVisible && (
         <Snackbar
           message={snackbar.message}
           type={snackbar.type}
-          onClose={() =>
-            setSnackbar({ isVisible: false, message: "", type: "" })
-          }
+          onClose={() => setSnackbar({ isVisible: false, message: "", type: "" })}
         />
       )}
     </div>
