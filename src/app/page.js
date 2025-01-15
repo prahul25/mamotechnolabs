@@ -84,39 +84,40 @@ const Dashboard = () => {
       showSnackbar("Please select both start and end times", "error");
       return;
     }
-
+  
     const start = new Date(selectedDate);
     const end = new Date(selectedDate);
     const [startHours, startMinutes] = startTime.split(":");
     const [endHours, endMinutes] = endTime.split(":");
-
-    start.setUTCHours(startHours, startMinutes);
-    end.setUTCHours(endHours, endMinutes);
-
+  
+    // Use setHours instead of setUTCHours
+    start.setHours(startHours, startMinutes);
+    end.setHours(endHours, endMinutes);
+  
     if (start >= end) {
       showSnackbar("End time must be after start time", "error");
       return;
     }
-
+  
     const isOverlapping = bookedSlots.some(
       (slot) =>
         (start >= slot.startTime && start < slot.endTime) ||
         (end > slot.startTime && end <= slot.endTime) ||
         (start <= slot.startTime && end >= slot.endTime)
     );
-
+  
     if (isOverlapping) {
       showSnackbar("Selected time overlaps with an existing booking", "error");
       return;
     }
-
+  
     try {
       if (editMode) {
         await axios.put(`/api/slots?id=${editMode._id}`, {
           startTime: start.toISOString(),
           endTime: end.toISOString(),
         });
-
+  
         showSnackbar("Slot updated successfully!", "success");
       } else {
         await axios.post("/api/slots", {
@@ -126,7 +127,7 @@ const Dashboard = () => {
         });
         showSnackbar("Slot booked successfully!", "success");
       }
-
+  
       setStartTime("");
       setEndTime("");
       setEditMode(null);
@@ -135,7 +136,8 @@ const Dashboard = () => {
     } catch (error) {
       showSnackbar("Error booking slot", "error");
     }
-};
+  };
+  
 
 
   const deleteSlot = async (slotId) => {
