@@ -85,8 +85,13 @@ const Dashboard = () => {
       return;
     }
 
-    const start = new Date(`${selectedDate.toDateString()} ${startTime}`);
-    const end = new Date(`${selectedDate.toDateString()} ${endTime}`);
+    const start = new Date(selectedDate);
+    const end = new Date(selectedDate);
+    const [startHours, startMinutes] = startTime.split(":");
+    const [endHours, endMinutes] = endTime.split(":");
+
+    start.setUTCHours(startHours, startMinutes);
+    end.setUTCHours(endHours, endMinutes);
 
     if (start >= end) {
       showSnackbar("End time must be after start time", "error");
@@ -107,7 +112,6 @@ const Dashboard = () => {
 
     try {
       if (editMode) {
-        // console.log(editMode)
         await axios.put(`/api/slots?id=${editMode._id}`, {
           startTime: start.toISOString(),
           endTime: end.toISOString(),
@@ -131,7 +135,8 @@ const Dashboard = () => {
     } catch (error) {
       showSnackbar("Error booking slot", "error");
     }
-  };
+};
+
 
   const deleteSlot = async (slotId) => {
     try {
@@ -168,6 +173,7 @@ const Dashboard = () => {
       {/* calendar section */}
       <div className="flex-grow bg-white px-6 py-2 shadow-lg rounded-lg">
         <h2 className="text-2xl font-semibold text-blue-800 mb-2">Select a Date</h2>
+        <h3>{selectedDate?.selectedDate}</h3>
         <Calendar
           onChange={setSelectedDate}
           value={selectedDate}
