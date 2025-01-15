@@ -10,6 +10,7 @@ const startOfDay = (date) => {
   return newDate;
 };
 
+
 const Snackbar = ({ message, type, onClose }) => (
   <div
     className={`fixed bottom-4 left-4 px-6 py-3 rounded-md shadow-lg text-white text-sm transition duration-300 ease-in-out ${
@@ -85,15 +86,14 @@ const Dashboard = () => {
       return;
     }
   
-    // Use the local time to combine date and time properly
     const start = new Date(selectedDate);
     const end = new Date(selectedDate);
   
     const [startHours, startMinutes] = startTime.split(":").map(Number);
     const [endHours, endMinutes] = endTime.split(":").map(Number);
   
-    start.setHours(startHours, startMinutes, 0, 0); // Use local time hours
-    end.setHours(endHours, endMinutes, 0, 0); // Use local time hours
+    start.setHours(startHours, startMinutes, 0, 0);
+    end.setHours(endHours, endMinutes, 0, 0);
   
     if (start >= end) {
       showSnackbar("End time must be after start time", "error");
@@ -138,7 +138,8 @@ const Dashboard = () => {
     }
   };
   
-
+  
+  
 
   const deleteSlot = async (slotId) => {
     try {
@@ -161,50 +162,56 @@ const Dashboard = () => {
     if (view === "month") {
       const dateKey = startOfDay(date).toISOString().split("T")[0];
       const slotCount = calendarData[dateKey] || 0;
-
-      if (slotCount === 0) return "react-calendar__tile--empty";
-      if (slotCount === 1) return "react-calendar__tile--few-slots";
-      if (slotCount >= 2 && slotCount <= 4) return "react-calendar__tile--some-slots";
-      if (slotCount >= 5) return "react-calendar__tile--fully-booked";
+  
+      if (slotCount === 0) return "react-calendar__tile--empty"; // Gray
+      if (slotCount === 1) return "react-calendar__tile--few-slots"; // Green
+      if (slotCount >= 2 && slotCount <= 4) return "react-calendar__tile--some-slots"; // Yellow
+      if (slotCount >= 5) return "react-calendar__tile--fully-booked"; // Red
     }
-    return "";
+    return ""; // Default
   };
+  
+
 
   return (
     <div className="flex flex-wrap bg-gradient-to-r from-blue-50 to-indigo-100 pt-6 px-6 min-h-screen gap-4">
       {/* calendar section */}
       <div className="flex-grow bg-white px-6 py-2 shadow-lg rounded-lg">
         <h2 className="text-2xl font-semibold text-blue-800 mb-2">Select a Date</h2>
-        <h3>{selectedDate?.selectedDate}</h3>
+        <h3 className="text-lg font-medium text-gray-700">
+          Selected Date: {selectedDate.toDateString()}
+        </h3>
         <Calendar
-          onChange={setSelectedDate}
-          value={selectedDate}
-          tileClassName={getTileClassName}
-          minDate={new Date()}
-          className="react-calendar"
-        />
+  onChange={setSelectedDate}
+  value={selectedDate}
+  tileClassName={getTileClassName} // Ensure this line is active
+  minDate={new Date()}
+  className="react-calendar"
+/>
+
         <div className="mt-4 w-full">
-            <h3 className="text-lg font-medium mb-2">Legend:</h3>
-            <div className="flex gap-4 text-sm">
-              <div className="flex items-center">
-                <div className="w-4 h-4 bg-gray-300 rounded-full mr-2"></div>
-                No Slots
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 bg-green-300 rounded-full mr-2"></div>
-                Few Slots
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 bg-yellow-300 rounded-full mr-2"></div>
-                Some Slots
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 bg-red-400 rounded-full mr-2"></div>
-                Fully Booked
-              </div>
+          <h3 className="text-lg font-medium mb-2">Legend:</h3>
+          <div className="flex gap-4 text-sm">
+            <div className="flex items-center">
+              <div className="w-4 h-4 bg-gray-300 rounded-full mr-2"></div>
+              No Slots
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 bg-green-300 rounded-full mr-2"></div>
+              Few Slots
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 bg-yellow-300 rounded-full mr-2"></div>
+              Some Slots
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 bg-red-400 rounded-full mr-2"></div>
+              Fully Booked
             </div>
           </div>
+        </div>
       </div>
+
 
       {/* update slot section */}
       <div className="flex-grow bg-white p-4 shadow-lg rounded-lg">
