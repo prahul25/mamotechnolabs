@@ -85,14 +85,15 @@ const Dashboard = () => {
       return;
     }
   
+    // Use the local time to combine date and time properly
     const start = new Date(selectedDate);
     const end = new Date(selectedDate);
-    const [startHours, startMinutes] = startTime.split(":");
-    const [endHours, endMinutes] = endTime.split(":");
   
-    // Use setHours instead of setUTCHours
-    start.setHours(startHours, startMinutes);
-    end.setHours(endHours, endMinutes);
+    const [startHours, startMinutes] = startTime.split(":").map(Number);
+    const [endHours, endMinutes] = endTime.split(":").map(Number);
+  
+    start.setHours(startHours, startMinutes, 0, 0); // Use local time hours
+    end.setHours(endHours, endMinutes, 0, 0); // Use local time hours
   
     if (start >= end) {
       showSnackbar("End time must be after start time", "error");
@@ -117,7 +118,6 @@ const Dashboard = () => {
           startTime: start.toISOString(),
           endTime: end.toISOString(),
         });
-  
         showSnackbar("Slot updated successfully!", "success");
       } else {
         await axios.post("/api/slots", {
