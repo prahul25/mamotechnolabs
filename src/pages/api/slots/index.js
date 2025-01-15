@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   const { method } = req;
 
   await connectMongo();
-
+console.log(method, "method")
   try {
     switch (method) {
       // get all slots or slots for a specific date
@@ -53,25 +53,35 @@ export default async function handler(req, res) {
 
       // updating existing slot by id
       case "PUT": {
+        // console.log("Put action taken", method)
         const { id } = req.query;
         const { startTime, endTime } = req.body;
-
-        const updatedSlot = await Slot.findByIdAndUpdate(
-          id,
-          { startTime, endTime },
-          { new: true }
-        );
-
+      
+        // console.log("API route reached for PUT request");
+        // console.log(id, "Slot ID");
+        // console.log(req.body, "Request Body");
+      // const prev = await Slot.findById(id)
+      // console.log(prev,"prev")
+      const updatedSlot = await Slot.findByIdAndUpdate(
+        id,
+        { startTime, endTime },
+        { new: true }
+      );
+      // console.log(updatedSlot,"current")
+      
         if (!updatedSlot) {
           return res.status(404).json({ message: "Slot not found!" });
         }
-
+      
+        console.log(updatedSlot, "Updated Slot");
         res.status(200).json(updatedSlot);
         break;
       }
+      
 
       // emoving slot by id
       case "DELETE": {
+        console.log("delete action taken", method)
         const { id } = req.query;
 
         const deletedSlot = await Slot.findByIdAndDelete(id);

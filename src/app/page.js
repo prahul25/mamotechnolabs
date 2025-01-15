@@ -10,7 +10,6 @@ const startOfDay = (date) => {
   return newDate;
 };
 
-// Snackbar component
 const Snackbar = ({ message, type, onClose }) => (
   <div
     className={`fixed bottom-4 left-4 px-6 py-3 rounded-md shadow-lg text-white text-sm transition duration-300 ease-in-out ${
@@ -27,11 +26,11 @@ const Snackbar = ({ message, type, onClose }) => (
 
 const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [timeSlots, setTimeSlots] = useState([]);
   const [bookedSlots, setBookedSlots] = useState([]);
   const [calendarData, setCalendarData] = useState({});
-  const [selectedSlot, setSelectedSlot] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [editMode, setEditMode] = useState(null);
   const [snackbar, setSnackbar] = useState({
     isVisible: false,
     message: "",
@@ -39,11 +38,8 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    setIsLoading(true);
     fetchBookedSlots(selectedDate.toISOString());
     fetchCalendarData();
-    generateTimeSlots();
-    setIsLoading(false);
   }, [selectedDate]);
 
   const fetchBookedSlots = async (date) => {
@@ -78,38 +74,58 @@ const Dashboard = () => {
     }
   };
 
-  const generateTimeSlots = () => {
-    const startHour = 12;
-    const endHour = 17;
-    const slots = [];
-    const baseDate = startOfDay(selectedDate);
-
-    for (let hour = startHour; hour < endHour; hour++) {
-      const start = new Date(baseDate);
-      start.setUTCHours(hour, 0, 0, 0);
-
-      const end = new Date(baseDate);
-      end.setUTCHours(hour + 1, 0, 0, 0);
-
-      slots.push({ startTime: start, endTime: end });
-    }
-
-    setTimeSlots(slots);
-  };
-
   const showSnackbar = (message, type) => {
     setSnackbar({ isVisible: true, message, type });
     setTimeout(() => setSnackbar({ isVisible: false, message: "", type: "" }), 3000);
   };
 
-  const bookSlot = async (slot) => {
+  const bookSlot = async () => {
+    if (!startTime || !endTime) {
+      showSnackbar("Please select both start and end times", "error");
+      return;
+    }
+
+    const start = new Date(`${selectedDate.toDateString()} ${startTime}`);
+    const end = new Date(`${selectedDate.toDateString()} ${endTime}`);
+
+    if (start >= end) {
+      showSnackbar("End time must be after start time", "error");
+      return;
+    }
+
+    const isOverlapping = bookedSlots.some(
+      (slot) =>
+        (start >= slot.startTime && start < slot.endTime) ||
+        (end > slot.startTime && end <= slot.endTime) ||
+        (start <= slot.startTime && end >= slot.endTime)
+    );
+
+    if (isOverlapping) {
+      showSnackbar("Selected time overlaps with an existing booking", "error");
+      return;
+    }
+
     try {
-      await axios.post("/api/slots", {
-        startTime: slot.startTime.toISOString(),
-        endTime: slot.endTime.toISOString(),
-        createdBy: "User",
-      });
-      showSnackbar("Slot booked successfully!", "success");
+      if (editMode) {
+        // console.log(editMode)
+        await axios.put(`/api/slots?id=${editMode._id}`, {
+          startTime: start.toISOString(),
+          endTime: end.toISOString(),
+        });
+
+        showSnackbar("Slot updated successfully!", "success");
+      } else {
+        await axios.post("/api/slots", {
+          startTime: start.toISOString(),
+          endTime: end.toISOString(),
+          createdBy: "User",
+        });
+        showSnackbar("Slot booked successfully!", "success");
+      }
+
+      setStartTime("");
+      setEndTime("");
+      setEditMode(null);
       fetchBookedSlots(selectedDate.toISOString());
       fetchCalendarData();
     } catch (error) {
@@ -128,43 +144,10 @@ const Dashboard = () => {
     }
   };
 
-  const updateSlot = async (slotId, newSlot) => {
-    try {
-      await axios.put(`/api/slots?id=${slotId}`, {
-        startTime: newSlot.startTime.toISOString(),
-        endTime: newSlot.endTime.toISOString(),
-      });
-      showSnackbar("Slot updated successfully!", "success");
-      fetchBookedSlots(selectedDate.toISOString());
-      fetchCalendarData();
-      setSelectedSlot(null);
-    } catch (error) {
-      showSnackbar("Error updating slot", "error");
-    }
-  };
-
-  const handleUpdateSlot = (newSlot) => {
-    if (!selectedSlot) {
-      showSnackbar("Please select a slot to update.", "error");
-      return;
-    }
-
-    const isBooked = bookedSlots.some(
-      (bookedSlot) => bookedSlot.startTime.getTime() === newSlot.startTime.getTime()
-    );
-
-    if (isBooked) {
-      showSnackbar("Cannot update to a booked slot.", "error");
-      return;
-    }
-
-    const updatedSlot = {
-      ...selectedSlot,
-      startTime: newSlot.startTime,
-      endTime: newSlot.endTime,
-    };
-
-    updateSlot(selectedSlot._id, updatedSlot);
+  const handleEdit = (slot) => {
+    setStartTime(slot.startTime.toTimeString().slice(0, 5));
+    setEndTime(slot.endTime.toTimeString().slice(0, 5));
+    setEditMode(slot);
   };
 
   const getTileClassName = ({ date, view }) => {
@@ -180,27 +163,21 @@ const Dashboard = () => {
     return "";
   };
 
-  if (isLoading) {
-    return <div className="text-center p-4">Loading...</div>;
-  }
-
   return (
-    <div className="flex flex-col items-center bg-gradient-to-r from-blue-50 to-indigo-100 p-6 min-h-screen">
-      <h1 className="text-4xl font-bold text-blue-800 mb-6">Time Slot Scheduler</h1>
-      <div className="flex flex-wrap justify-center gap-10 w-full">
-        {/* Calendar Component */}
-        <div className="bg-white p-6 shadow-lg rounded-lg w-full md:w-1/3 flex flex-col items-center">
-          <h2 className="text-2xl font-semibold text-blue-800 mb-4">Select a Date</h2>
-          <Calendar
-            onChange={setSelectedDate}
-            value={selectedDate}
-            tileClassName={getTileClassName}
-            minDate={new Date()}
-            className="react-calendar"
-          />
-          <div className="mt-6 w-full">
+    <div className="flex flex-wrap bg-gradient-to-r from-blue-50 to-indigo-100 pt-6 px-6 min-h-screen gap-4">
+      {/* calendar section */}
+      <div className="flex-grow bg-white px-6 py-2 shadow-lg rounded-lg">
+        <h2 className="text-2xl font-semibold text-blue-800 mb-2">Select a Date</h2>
+        <Calendar
+          onChange={setSelectedDate}
+          value={selectedDate}
+          tileClassName={getTileClassName}
+          minDate={new Date()}
+          className="react-calendar"
+        />
+        <div className="mt-4 w-full">
             <h3 className="text-lg font-medium mb-2">Legend:</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="flex gap-4 text-sm">
               <div className="flex items-center">
                 <div className="w-4 h-4 bg-gray-300 rounded-full mr-2"></div>
                 No Slots
@@ -219,62 +196,47 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
+      </div>
+
+      {/* update slot section */}
+      <div className="flex-grow bg-white p-4 shadow-lg rounded-lg">
+        <h2 className="text-2xl font-semibold text-blue-800 mb-4">Book/Update Slot</h2>
+
+        
+        <div className="flex gap-4 items-center mb-6">
+          <label className="flex-grow">
+            <span>Start Time:</span>
+            <input
+              type="time"
+              className="block w-full p-2 border rounded-md"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+            />
+          </label>
+          <label className="flex-grow">
+            <span>End Time:</span>
+            <input
+              type="time"
+              className="block w-full p-2 border rounded-md"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+            />
+          </label>
+          <button
+            className="px-6 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-700"
+            onClick={bookSlot}
+          >
+            {editMode ? "Update Slot" : "Book Slot"}
+          </button>
         </div>
 
-        {/* Time Slots Section */}
-        <div className="flex flex-col items-center bg-white p-6 shadow-lg rounded-lg w-full md:w-1/2">
-          <h2 className="text-2xl font-semibold text-blue-800 mb-4">{selectedDate.toDateString()} - Time Slots</h2>
-          <div className="flex flex-wrap gap-4 justify-center">
-            {timeSlots.map((slot, index) => {
-              const isBooked = bookedSlots.some(
-                (bookedSlot) => bookedSlot.startTime.getTime() === slot.startTime.getTime()
-              );
-
-              const isSelected =
-                selectedSlot?.startTime?.getTime() === slot.startTime.getTime();
-
-              return (
-                <button
-                  key={index}
-                  disabled={isBooked}
-                  className={`p-2 border rounded-lg text-base transition duration-300 ease-in-out ${
-                    isBooked
-                      ? "bg-gray-300 cursor-not-allowed"
-                      : "bg-indigo-500 text-white hover:bg-indigo-700"
-                  } ${isSelected ? "bg-green-500 text-white" : ""}`}
-                  onClick={() => {
-                    if (selectedSlot) {
-                      handleUpdateSlot(slot);
-                      setSelectedSlot(null);
-                    } else if (!isBooked) {
-                      bookSlot(slot);
-                    }
-                  }}
-                >
-                  {slot.startTime.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}{" "}
-                  -{" "}
-                  {slot.endTime.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                  {isBooked && (
-                    <span className="ml-2 text-sm text-red-500">(Booked)</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Booked Slots Section */}
-          <h2 className="mt-6 text-xl font-semibold text-blue-800">Booked Slots</h2>
-          <div className="grid grid-cols-1 gap-4 p-1">
-            {bookedSlots.map((slot) => (
+      
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {bookedSlots.length > 0 ? (
+            bookedSlots.map((slot) => (
               <div
                 key={slot._id}
-                className="flex justify-between items-center gap-4 py-2 px-6 border rounded-lg bg-gray-200"
+                className="p-4 border rounded-lg shadow-sm bg-gray-100 flex flex-col justify-between"
               >
                 <span>
                   {slot.startTime.toLocaleTimeString([], {
@@ -287,37 +249,28 @@ const Dashboard = () => {
                     minute: "2-digit",
                   })}
                 </span>
-                <div className="flex gap-2">
+                <div className="flex justify-end gap-2 mt-2">
                   <button
-                    className={`p-1 text-white text-sm rounded-lg ${
-                      selectedSlot?._id === slot._id
-                        ? "bg-yellow-500"
-                        : "bg-blue-500"
-                    }`}
-                    onClick={() => {
-                      if (selectedSlot?._id === slot._id) {
-                        setSelectedSlot(null);
-                      } else {
-                        setSelectedSlot(slot);
-                      }
-                    }}
+                    className="px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-700"
+                    onClick={() => handleEdit(slot)}
                   >
-                    {selectedSlot?._id === slot._id ? "Cancel" : "Update"}
+                    Edit
                   </button>
                   <button
-                    className="p-1 bg-red-600 text-white text-sm rounded-lg"
+                    className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-700"
                     onClick={() => deleteSlot(slot._id)}
                   >
                     Delete
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
+            ))
+          ) : (
+            <p className="col-span-full text-center">No slots booked yet.</p>
+          )}
         </div>
       </div>
 
-      {/* Snackbar for delete, update, and booking */}
       {snackbar.isVisible && (
         <Snackbar
           message={snackbar.message}
