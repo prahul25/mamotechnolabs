@@ -6,10 +6,9 @@ import axios from "axios";
 
 const startOfDay = (date) => {
   const newDate = new Date(date);
-  newDate.setUTCHours(0, 0, 0, 0);
+  newDate.setHours(0, 0, 0, 0);
   return newDate;
 };
-
 
 const Snackbar = ({ message, type, onClose }) => (
   <div
@@ -77,7 +76,10 @@ const Dashboard = () => {
 
   const showSnackbar = (message, type) => {
     setSnackbar({ isVisible: true, message, type });
-    setTimeout(() => setSnackbar({ isVisible: false, message: "", type: "" }), 3000);
+    setTimeout(
+      () => setSnackbar({ isVisible: false, message: "", type: "" }),
+      3000
+    );
   };
 
   const bookSlot = async () => {
@@ -85,33 +87,33 @@ const Dashboard = () => {
       showSnackbar("Please select both start and end times", "error");
       return;
     }
-  
-    const start = new Date(selectedDate);
-    const end = new Date(selectedDate);
-  
+
+    const start = new Date(selectedDate.getTime());
+    const end = new Date(selectedDate.getTime());
+
     const [startHours, startMinutes] = startTime.split(":").map(Number);
     const [endHours, endMinutes] = endTime.split(":").map(Number);
-  
+
     start.setHours(startHours, startMinutes, 0, 0);
     end.setHours(endHours, endMinutes, 0, 0);
-  
+
     if (start >= end) {
       showSnackbar("End time must be after start time", "error");
       return;
     }
-  
+
     const isOverlapping = bookedSlots.some(
       (slot) =>
         (start >= slot.startTime && start < slot.endTime) ||
         (end > slot.startTime && end <= slot.endTime) ||
         (start <= slot.startTime && end >= slot.endTime)
     );
-  
+
     if (isOverlapping) {
       showSnackbar("Selected time overlaps with an existing booking", "error");
       return;
     }
-  
+
     try {
       if (editMode) {
         await axios.put(`/api/slots?id=${editMode._id}`, {
@@ -127,7 +129,7 @@ const Dashboard = () => {
         });
         showSnackbar("Slot booked successfully!", "success");
       }
-  
+
       setStartTime("");
       setEndTime("");
       setEditMode(null);
@@ -137,9 +139,6 @@ const Dashboard = () => {
       showSnackbar("Error booking slot", "error");
     }
   };
-  
-  
-  
 
   const deleteSlot = async (slotId) => {
     try {
@@ -162,32 +161,33 @@ const Dashboard = () => {
     if (view === "month") {
       const dateKey = startOfDay(date).toISOString().split("T")[0];
       const slotCount = calendarData[dateKey] || 0;
-  
-      if (slotCount === 0) return "react-calendar__tile--empty"; // Gray
-      if (slotCount === 1) return "react-calendar__tile--few-slots"; // Green
-      if (slotCount >= 2 && slotCount <= 4) return "react-calendar__tile--some-slots"; // Yellow
-      if (slotCount >= 5) return "react-calendar__tile--fully-booked"; // Red
+console.log(dateKey,slotCount,"ss")
+      if (slotCount === 0) return "react-calendar__tile--empty";
+      if (slotCount === 1) return "react-calendar__tile--few-slots";
+      if (slotCount >= 2 && slotCount <= 4)
+        return "react-calendar__tile--some-slots";
+      if (slotCount >= 5) return "react-calendar__tile--fully-booked";
     }
-    return ""; // Default
+    return "";
   };
-  
-
 
   return (
     <div className="flex flex-wrap bg-gradient-to-r from-blue-50 to-indigo-100 pt-6 px-6 min-h-screen gap-4">
       {/* calendar section */}
       <div className="flex-grow bg-white px-6 py-2 shadow-lg rounded-lg">
-        <h2 className="text-2xl font-semibold text-blue-800 mb-2">Select a Date</h2>
+        <h2 className="text-2xl font-semibold text-blue-800 mb-2">
+          Select a Date
+        </h2>
         <h3 className="text-lg font-medium text-gray-700">
           Selected Date: {selectedDate.toDateString()}
         </h3>
         <Calendar
-  onChange={setSelectedDate}
-  value={selectedDate}
-  tileClassName={getTileClassName} // Ensure this line is active
-  minDate={new Date()}
-  className="react-calendar"
-/>
+          onChange={setSelectedDate}
+          value={selectedDate}
+          tileClassName={getTileClassName}
+          minDate={new Date()}
+          className="react-calendar"
+        />
 
         <div className="mt-4 w-full">
           <h3 className="text-lg font-medium mb-2">Legend:</h3>
@@ -212,12 +212,12 @@ const Dashboard = () => {
         </div>
       </div>
 
-
       {/* update slot section */}
       <div className="flex-grow bg-white p-4 shadow-lg rounded-lg">
-        <h2 className="text-2xl font-semibold text-blue-800 mb-4">Book/Update Slot</h2>
+        <h2 className="text-2xl font-semibold text-blue-800 mb-4">
+          Book/Update Slot
+        </h2>
 
-        
         <div className="flex gap-4 items-center mb-6">
           <label className="flex-grow">
             <span>Start Time:</span>
@@ -245,7 +245,6 @@ const Dashboard = () => {
           </button>
         </div>
 
-      
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {bookedSlots.length > 0 ? (
             bookedSlots.map((slot) => (
@@ -290,7 +289,9 @@ const Dashboard = () => {
         <Snackbar
           message={snackbar.message}
           type={snackbar.type}
-          onClose={() => setSnackbar({ isVisible: false, message: "", type: "" })}
+          onClose={() =>
+            setSnackbar({ isVisible: false, message: "", type: "" })
+          }
         />
       )}
     </div>
